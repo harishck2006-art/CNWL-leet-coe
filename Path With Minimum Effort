@@ -1,0 +1,123 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <limits.h>
+
+typedef struct {
+    int r;
+    int c;
+    int effort;
+} Cell;
+
+typedef struct {
+    Cell* data;
+    int size;
+    int capacity;
+} MinHeap;
+
+MinHeap* createMinHeap(int capacity) {
+    MinHeap* heap = (MinHeap*)malloc(sizeof(MinHeap));
+    heap->data = (Cell*)malloc(capacity * sizeof(Cell));
+    heap->size = 0;
+    heap->capacity = capacity;
+    return heap;
+}
+
+void swap(Cell* a, Cell* b) {
+    Cell temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+void push(MinHeap* heap, Cell cell) {
+    heap->data[heap->size] = cell;
+    int idx = heap->size;
+    heap->size++;
+    while (idx > 0) {
+        int parent = (idx - 1) / 2;
+        if (heap->data[idx].effort < heap->data[parent].effort) {
+            swap(&heap->data[idx], &heap->data[parent]);
+            idx = parent;
+        } else {
+            break;
+        }
+    }
+}
+
+Cell pop(MinHeap* heap) {
+    Cell res = heap->data[0];
+    heap->size--;
+    heap->data[0] = heap->data[heap->size];
+    int idx = 0;
+    while (2 * idx + 1 < heap->size) {
+        int left = 2 * idx + 1;
+        int right = 2 * idx + 2;
+        int smallest = left;
+        if (right < heap->size && heap->data[right].effort < heap->data[left].effort) {
+            smallest = right;
+        }
+        if (heap->data[smallest].effort < heap->data[idx].effort) {
+            swap(&heap->data[idx], &heap->data[smallest]);
+            idx = smallest;
+        } else {
+            break;
+        }
+    }
+    return res;
+}
+
+int minimumEffortPath(int** heights, int heightsSize, int* heightsColSize) {
+    int rows = heightsSize;
+    int cols = heightsColSize[0];
+    
+    int** eff = (int**)malloc(rows * sizeof(int*));
+    for (int i = 0; i < rows; i++) {
+        eff[i] = (int*)malloc(cols * sizeof(int));
+        for (int j = 0; j < cols; j++) {
+            eff[i][j] = INT_MAX;
+        }
+    }
+    
+    MinHeap* heap = createMinHeap(rows * cols * 4);
+    eff[0][0] = 0;
+    Cell start = {0, 0, 0};
+    push(heap, start);
+    
+    int dr[] = {-1, 1, 0, 0};
+    int dc[] = {0, 0, -1, 1};
+    
+    while (heap->size > 0) {
+        Cell curr = pop(heap);
+        int r = curr.r;
+        int c = curr.c;
+        int e = curr.effort;
+        
+        if (r == rows - 1 && c == cols - 1) {
+            int ans = eff[r][c];
+            for (int i = 0; i < rows; i++) free(eff[i]);
+            free(eff);
+            free(heap->data);
+            free(heap);
+            return ans;
+        }
+        
+        if (e > eff[r][c]) continue;
+        
+        for (int i = 0; i < 4; i++) {
+            int nr = r + dr[i];
+            int nc = c + dc[i];
+            
+            if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
+                int diff = abs(heights[r][c] - heights[nr][nc]);
+                int max_e = (diff > e) ? diff : e;
+                if (max_e < eff[nr][nc]) {
+                    eff[nr][nc] = max_e;
+                    Cell nextCell = {nr, nc, max_e};
+                    push(heap, nextCell);
+                }
+            }
+        }
+    }
+    
+    return 0;
+}
