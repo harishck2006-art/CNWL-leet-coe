@@ -1,0 +1,64 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+typedef struct {
+    int to;
+    int original;
+} Edge;
+
+int minReorder(int n, int** connections, int connectionsSize, int* connectionsColSize) {
+    int* head = (int*)malloc(n * sizeof(int));
+    int* next = (int*)malloc(2 * connectionsSize * sizeof(int));
+    Edge* edges = (Edge*)malloc(2 * connectionsSize * sizeof(Edge));
+    
+    for (int i = 0; i < n; i++) {
+        head[i] = -1;
+    }
+    
+    int edgeIdx = 0;
+    for (int i = 0; i < connectionsSize; i++) {
+        int u = connections[i][0];
+        int v = connections[i][1];
+        
+        edges[edgeIdx].to = v;
+        edges[edgeIdx].original = 1;
+        next[edgeIdx] = head[u];
+        head[u] = edgeIdx++;
+        
+        edges[edgeIdx].to = u;
+        edges[edgeIdx].original = 0;
+        next[edgeIdx] = head[v];
+        head[v] = edgeIdx++;
+    }
+    
+    int* queue = (int*)malloc(n * sizeof(int));
+    int* visited = (int*)calloc(n, sizeof(int));
+    int headIdx = 0, tailIdx = 0;
+    int reorderCount = 0;
+    
+    queue[tailIdx++] = 0;
+    visited[0] = 1;
+    
+    while (headIdx < tailIdx) {
+        int curr = queue[headIdx++];
+        
+        for (int e = head[curr]; e != -1; e = next[e]) {
+            int neighbor = edges[e].to;
+            if (!visited[neighbor]) {
+                visited[neighbor] = 1;
+                if (edges[e].original == 1) {
+                    reorderCount++;
+                }
+                queue[tailIdx++] = neighbor;
+            }
+        }
+    }
+    
+    free(head);
+    free(next);
+    free(edges);
+    free(queue);
+    free(visited);
+    
+    return reorderCount;
+}
